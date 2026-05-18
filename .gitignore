@@ -14,3 +14,7 @@ Thumbs.db
 
 # Arquivos de exemplo locais (só não suba seus extratos reais)
 # extratos_reais/
+
+# Variáveis de ambiente (NUNCA COMITAR — contém API keys)
+.env
+*.env
