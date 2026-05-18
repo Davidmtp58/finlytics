@@ -52,5 +52,5 @@ def calcular_resumo(df):
 def top_categorias_gasto(df, n=3):
     """Retorna as N categorias com maior valor de gasto."""
     total_por_categoria = df.groupby("categoria")["valor"].sum().round(2)
-    despesas = total_por_categoria[total_por_categoria < 0]
-    return despesas.sort_values().head(n)
+    despesas = total_por_categoria[total_por_categoria < 0].abs()
+    return despesas.sort_values(ascending=False).head(n)

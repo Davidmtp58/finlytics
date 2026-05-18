@@ -1,8 +1,13 @@
 import streamlit as st
 from finlytics import carregar_extrato, calcular_resumo, top_categorias_gasto
 
+st.set_page_config(
+    page_title="Finlytics",
+    page_icon="💰",
+    layout="centered",
+)
 
-st.title("Finlytics")
+st.title("💰 Finlytics")
 st.write("Assistente Financeiro Pessoal")
 
 arquivo = st.file_uploader("Envie seu extrato em CSV", type=["csv"])
