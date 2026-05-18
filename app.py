@@ -17,14 +17,24 @@ arquivo = st.file_uploader("Envie seu extrato em CSV", type=["csv"])
 
 if arquivo is None:
     st.info("👆 Envie um arquivo CSV para ver a análise")
+
 else:
     df = carregar_extrato(arquivo)
-    df["data"] = df["data"].dt.strftime("%d/%m/%Y")
+    meses_disponiveis = ["Todos"] + list(df["data"].dt.strftime("%Y-%m").unique())
+    mes_escolhido = st.selectbox("Mês", meses_disponiveis)
+    
+    if mes_escolhido == "Todos":
+        df_filtrado = df.copy()
+    else:
+        df_filtrado = df[df["data"].dt.strftime("%Y-%m") == mes_escolhido].copy()
+    
+    df_filtrado["data"] = df_filtrado["data"].dt.strftime("%d/%m/%Y")
+
 
     # Tabela editável (usuário pode corrigir categorias)
     st.subheader("Transações do mês")
     df_editado = st.data_editor(
-        df,
+        df_filtrado,
         disabled=["data", "descricao", "valor"],
         use_container_width=True,
         column_config={
@@ -34,8 +44,6 @@ else:
             ),
         },
     )
-
-    resumo = calcular_resumo(df_editado)
 
     # A partir daqui, tudo usa df_editado
     resumo = calcular_resumo(df_editado)
@@ -47,5 +55,5 @@ else:
     col3.metric("Saldo do mês", formatar_moeda(resumo["saldo"]))
 
     st.subheader("Top 3 categorias de gasto")
-    top3 = top_categorias_gasto(df_editado, n=3).abs()
+    top3 = top_categorias_gasto(df_editado, n=3)
     st.bar_chart(top3)
