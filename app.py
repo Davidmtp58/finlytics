@@ -35,7 +35,7 @@ else:
     st.subheader("Transações do mês")
     df_editado = st.data_editor(
         df_filtrado,
-        disabled=["data", "descricao", "valor"],
+        disabled=[],
         use_container_width=True,
         column_config={
             "valor": st.column_config.NumberColumn(
