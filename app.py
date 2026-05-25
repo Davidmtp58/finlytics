@@ -1,5 +1,5 @@
 import streamlit as st
-from finlytics import carregar_extrato, calcular_resumo, top_categorias_gasto
+from finlytics import carregar_extrato, calcular_resumo, top_categorias_gasto, extrair_transacoes_de_pdf
 
 def formatar_moeda(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -13,13 +13,17 @@ st.set_page_config(
 st.title("💰 Finlytics")
 st.write("Assistente Financeiro Pessoal")
 
-arquivo = st.file_uploader("Envie seu extrato em CSV", type=["csv"])
+arquivo = st.file_uploader("Envie seu extrato em CSV ou PDF", type=["csv", "pdf"])
 
 if arquivo is None:
-    st.info("👆 Envie um arquivo CSV para ver a análise")
+    st.info("👆 Envie um arquivo CSV ou PDF para ver a análise")
 
 else:
-    df = carregar_extrato(arquivo)
+    if arquivo.name.endswith(".pdf"):
+        df = extrair_transacoes_de_pdf(arquivo)
+    else:
+        df = carregar_extrato(arquivo)
+
     meses_disponiveis = ["Todos"] + list(df["data"].dt.strftime("%Y-%m").unique())
     mes_escolhido = st.selectbox("Mês", meses_disponiveis)
     

@@ -7,6 +7,7 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+import json
 
 # === setup, roda uma vez ===
 load_dotenv()                                              
@@ -27,6 +28,8 @@ categorias_map = {
     "FARMACIA": "Saúde",
     "SALARIO": "Salário",
     "PIX RECEBIDA": "Entrada Diversa",
+    "PIX RECEBIDO": "Entrada Diversa",
+    "ACADEMIA": "FITNESS",
 }
 
 
@@ -110,3 +113,44 @@ def classificar_transacao(descricao):
         return categoria_local
 
     return classificar_com_gemini(descricao)
+
+def extrair_transacoes_de_pdf(arquivo_pdf):
+    """Usa o Gemini para extrair transações de um PDF de extrato bancário."""
+    
+    prompt = """Extraia TODAS as transações deste extrato bancário.
+
+Retorne APENAS um array JSON válido, sem texto antes ou depois, no formato:
+[
+  {"data": "AAAA-MM-DD", "descricao": "DESCRICAO DA TRANSACAO", "valor": -123.45}
+]
+
+Regras:
+1. data no formato AAAA-MM-DD (ano-mes-dia).
+2. valor numerico: negativo para despesas/saidas, positivo para receitas/entradas.
+3. descricao em letras maiusculas.
+4. Retorne SOMENTE o JSON, nada mais."""
+
+    bytes_pdf = arquivo_pdf.read()
+    
+    resposta = modelo_gemini.generate_content([
+        prompt,
+        {"mime_type": "application/pdf", "data": bytes_pdf}
+    ])
+    
+    # Limpa a resposta (remove marcações markdown que o Gemini adiciona)
+    texto = resposta.text.strip()
+    if texto.startswith("```json"):
+        texto = texto[7:]          
+    elif texto.startswith("```"):
+        texto = texto[3:]          
+    if texto.endswith("```"):
+        texto = texto[:-3]         
+    texto = texto.strip()
+    
+    # Converte JSON em DataFrame
+    dados = json.loads(texto)
+    df = pd.DataFrame(dados)
+    df["data"] = pd.to_datetime(df["data"])
+    df["categoria"] = df["descricao"].apply(classificar_transacao)
+    
+    return df
