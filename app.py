@@ -13,16 +13,16 @@ st.set_page_config(
 st.title("💰 Finlytics")
 st.write("Assistente Financeiro Pessoal")
 
-arquivo = st.file_uploader("Envie seu extrato em CSV ou PDF", type=["csv", "pdf"])
+arquivo = st.file_uploader("Envie seu extrato (CSV, PDF ou imagem)", type=["csv", "pdf", "png", "jpg", "jpeg"])
 
 if arquivo is None:
-    st.info("👆 Envie um arquivo CSV ou PDF para ver a análise")
+    st.info("👆 Envie um arquivo (CSV, PDF ou imagem) para ver a análise")
 
 else:
-    if arquivo.name.endswith(".pdf"):
-        df = extrair_transacoes_de_pdf(arquivo)
-    else:
+    if arquivo.name.lower().endswith(".csv"):
         df = carregar_extrato(arquivo)
+    else:
+        df = extrair_transacoes_de_pdf(arquivo)
 
     meses_disponiveis = ["Todos"] + list(df["data"].dt.strftime("%Y-%m").unique())
     mes_escolhido = st.selectbox("Mês", meses_disponiveis)

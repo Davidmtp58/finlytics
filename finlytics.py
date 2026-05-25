@@ -29,7 +29,7 @@ categorias_map = {
     "SALARIO": "Salário",
     "PIX RECEBIDA": "Entrada Diversa",
     "PIX RECEBIDO": "Entrada Diversa",
-    "ACADEMIA": "FITNESS",
+    "ACADEMIA": "Fitness",
 }
 
 
@@ -75,6 +75,7 @@ Categorias possíveis (responda APENAS com uma destas, exatamente como escrito):
 - Transporte
 - Streaming
 - Saúde
+- Fitness
 - Salário
 - Entrada Diversa
 - Outros
@@ -131,10 +132,18 @@ Regras:
 4. Retorne SOMENTE o JSON, nada mais."""
 
     bytes_pdf = arquivo_pdf.read()
+
+    nome = arquivo_pdf.name.lower()
+    if nome.endswith(".pdf"):
+        mime = "application/pdf"
+    elif nome.endswith(".png"):
+        mime = "image/png"
+    else:
+        mime = "image/jpeg"
     
     resposta = modelo_gemini.generate_content([
         prompt,
-        {"mime_type": "application/pdf", "data": bytes_pdf}
+        {"mime_type": mime, "data": bytes_pdf}
     ])
     
     # Limpa a resposta (remove marcações markdown que o Gemini adiciona)
