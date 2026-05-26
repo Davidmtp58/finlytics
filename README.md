@@ -1,8 +1,8 @@
 # Finlytics 💰
 
-O **Finlytics** é um assistente financeiro pessoal desenvolvido em Python para analisar extratos bancários em CSV, categorizar transações e apresentar um resumo financeiro simples e visual.
+O **Finlytics** é um assistente financeiro pessoal desenvolvido em Python para analisar extratos bancários, categorizar transações e apresentar um resumo financeiro simples e visual.
 
-O projeto combina regras locais com IA generativa via Gemini para classificar transações bancárias brasileiras de forma mais inteligente.
+O projeto aceita extratos em **CSV, PDF e imagem** e combina regras locais com IA generativa via Gemini para classificar transações bancárias brasileiras de forma mais inteligente.
 
 ---
 
@@ -12,7 +12,8 @@ O objetivo do Finlytics é facilitar a análise de gastos pessoais a partir de u
 
 Com ele, o usuário pode:
 
-- Enviar um extrato em CSV;
+- Enviar um extrato em CSV, PDF ou imagem;
+- Filtrar por período/mês;
 - Visualizar as transações do mês;
 - Classificar automaticamente receitas e despesas;
 - Corrigir categorias manualmente;
@@ -27,11 +28,11 @@ Cada escolha técnica deste projeto foi feita com foco em três critérios: velo
 
 | Camada | Escolha | Status | Por que escolhi? |
 |---|---|---|---|
-| Linguagem | Python | ✅ Implementado | Ecossistema maduro para análise de dados e IA, permitindo construir desde a leitura do CSV até a interface e integração com LLM usando a mesma linguagem. |
+| Linguagem | Python | ✅ Implementado | Ecossistema maduro para análise de dados e IA, permitindo construir desde a leitura do arquivo até a interface e integração com LLM usando a mesma linguagem. |
 | Manipulação de dados | pandas | ✅ Implementado | Utilizado para leitura do extrato, conversão de datas, cálculo de receitas, despesas, saldo e agrupamento por categoria. |
-| Entrada de dados | CSV | ✅ Implementado | Formato simples e acessível para simular extratos bancários sem depender de integração bancária real nesta fase do MVP. |
-| Interface | Streamlit | ✅ Implementado | Permite criar uma interface visual em Python, com upload de CSV, tabela editável, métricas financeiras e gráfico de gastos. |
-| IA Generativa | Gemini API | ✅ Implementado | Usado como fallback para categorizar transações que não foram identificadas pelas regras locais. Isso reduz chamadas à API e deixa o projeto mais eficiente. |
+| Entrada de dados | CSV, PDF e imagem | ✅ Implementado | CSV é lido diretamente; PDF e imagem são interpretados pelo Gemini, que extrai as transações. Isso permite usar extratos no formato que o banco entrega. |
+| Interface | Streamlit | ✅ Implementado | Permite criar uma interface visual em Python, com upload de CSV, PDF e imagem, tabela editável, métricas financeiras e gráfico de gastos. |
+| IA Generativa | Gemini API | ✅ Implementado | Usado em dois pontos: extrair transações de PDF/imagem e classificar transações que não foram identificadas pelas regras locais. As regras locais reduzem chamadas à API e deixam o projeto mais eficiente. |
 | Segurança | `.env` e `.env.example` | ✅ Implementado | A chave real da API fica fora do GitHub no arquivo `.env`, enquanto o `.env.example` mostra como configurar o projeto. |
 
 ---
@@ -42,7 +43,8 @@ O Finlytics possui uma interface visual construída com Streamlit.
 
 Na aplicação, o usuário pode:
 
-- Enviar um extrato em CSV;
+- Enviar um extrato em CSV, PDF ou imagem;
+- Filtrar por período/mês (ou ver tudo consolidado);
 - Visualizar as transações do mês;
 - Corrigir categorias manualmente na tabela;
 - Ver receitas, despesas e saldo do mês;
@@ -54,23 +56,37 @@ A interface foi pensada para ser simples, direta e acessível para pessoas que n
 
 ## 4. Destaque de Engenharia: The Hard Part
 
-O principal desafio técnico do Finlytics foi criar uma classificação de transações que fosse útil sem depender totalmente de IA.
+O Finlytics tem dois destaques de engenharia, ambos apoiados em IA generativa.
 
-A solução adotada foi um pipeline híbrido:
+### 4.1. Classificação híbrida (regra → IA → usuário)
+
+O principal desafio técnico foi criar uma classificação de transações que fosse útil sem depender totalmente de IA. A solução foi um pipeline híbrido em cascata:
 
 1. Primeiro, o sistema tenta classificar a transação usando regras locais baseadas em palavras-chave.
-2. Se a categoria não for encontrada, a transação é enviada para o Gemini.
-3. O Gemini retorna apenas uma categoria válida.
+2. Se a categoria não for encontrada, a transação é enviada ao Gemini, que retorna apenas uma categoria válida da lista.
+3. Se o Gemini falhar (sem internet, cota excedida, etc.), o sistema retorna "Outros" automaticamente, sem derrubar a aplicação.
 4. O usuário ainda pode corrigir manualmente a categoria na interface.
 
-Esse desenho evita chamadas desnecessárias para a API, reduz custo, melhora a velocidade do sistema e mantém controle sobre as categorias possíveis.
+Esse desenho evita chamadas desnecessárias à API, reduz custo, melhora a velocidade e mantém controle sobre as categorias possíveis.
 
-Exemplo:
+Exemplos reais:
 
 ```text
-IFOOD RESTAURANTE -> regra local -> Alimentação
-PADARIA SAO JOSE -> Gemini -> Alimentação
+IFOOD RESTAURANTE      -> regra local            -> Alimentação
+PADARIA DOCE PÃO       -> regra não achou -> Gemini -> Alimentação
+ACADEMIA SMART FIT     -> regra não achou -> Gemini -> Fitness
+CONTA DE LUZ ENERGISA  -> regra não achou -> Gemini -> Outros
 ```
+
+### 4.2. Extração de documentos via Gemini multimodal
+
+Para aceitar PDF e imagem, o Finlytics usa o Gemini multimodal: o documento é enviado ao modelo, que "lê" o extrato e devolve as transações estruturadas em JSON. O JSON é então convertido em DataFrame e passa pelo mesmo pipeline de classificação.
+
+```text
+PDF/imagem -> Gemini -> JSON -> DataFrame -> classificação
+```
+
+Isso permite que o usuário envie o extrato no formato que o banco entrega, sem precisar montar um CSV manualmente.
 
 ---
 
@@ -78,14 +94,16 @@ PADARIA SAO JOSE -> Gemini -> Alimentação
 
 Atualmente, o Finlytics permite:
 
-- Upload de extrato bancário em CSV;
+- Upload de extrato bancário em CSV, PDF ou imagem;
+- Extração de transações de PDF e imagem via Gemini multimodal;
 - Leitura e tratamento dos dados com pandas;
-- Classificação automática das transações;
-- Uso de regras locais para categorias conhecidas;
-- Uso do Gemini como fallback para categorias não mapeadas;
+- Classificação automática das transações (regra local + Gemini como fallback);
+- Categorias suportadas: Alimentação, Transporte, Streaming, Saúde, Fitness, Salário, Entrada Diversa e Outros;
 - Edição manual das categorias na interface;
+- Filtro por mês ou visualização consolidada;
 - Cálculo de receitas, despesas e saldo;
 - Exibição do Top 3 categorias de gasto;
+- Formatação de valores e datas no padrão brasileiro (R$ 1.234,56 e dd/mm/aaaa);
 - Interface visual com Streamlit;
 - Configuração segura da chave da API com `.env`.
 
@@ -97,7 +115,7 @@ Atualmente, o Finlytics permite:
 
 - Python 3.12 ou superior;
 - Git;
-- Chave da API Gemini criada no Google AI Studio.
+- Chave da API Gemini criada no Google AI Studio (obrigatória para leitura de PDF/imagem e para a classificação via IA).
 
 ### Passo a passo
 
@@ -147,14 +165,12 @@ python relatorio_financeiro.py
 
 ### O que esperar
 
-Ao executar a interface, o usuário pode enviar um arquivo CSV e visualizar:
+Ao executar a interface, o usuário pode enviar um arquivo CSV, PDF ou imagem e visualizar:
 
 - Transações categorizadas;
-- Receitas;
-- Despesas;
-- Saldo do mês;
+- Receitas, despesas e saldo do mês;
 - Top 3 categorias de gasto;
-- Possibilidade de corrigir categorias manualmente.
+- Possibilidade de filtrar por mês e corrigir categorias manualmente.
 
 ---
 
@@ -167,6 +183,8 @@ finlytics/
 ├── finlytics.py
 ├── relatorio_financeiro.py
 ├── extrato_exemplo.csv
+├── extrato_bancario_abril_2026.pdf
+├── EXTRATO_TESTE.PNG
 ├── requirements.txt
 ├── README.md
 ├── .env.example
@@ -179,9 +197,11 @@ finlytics/
 | Arquivo | Descrição |
 |---|---|
 | `app.py` | Interface visual do projeto em Streamlit. |
-| `finlytics.py` | Contém a lógica principal de leitura, categorização e cálculos. |
+| `finlytics.py` | Contém a lógica principal de leitura, extração, categorização e cálculos. |
 | `relatorio_financeiro.py` | Executa uma análise simples pelo terminal. |
-| `extrato_exemplo.csv` | Arquivo de exemplo para testar o projeto. |
+| `extrato_exemplo.csv` | Arquivo CSV de exemplo para testar o projeto. |
+| `extrato_bancario_abril_2026.pdf` | Exemplo de extrato em PDF para testar a extração. |
+| `EXTRATO_TESTE.PNG` | Exemplo de extrato em imagem para testar a extração. |
 | `.env.example` | Modelo para configuração da chave da API Gemini. |
 | `requirements.txt` | Lista de dependências do projeto. |
 
@@ -193,15 +213,15 @@ O Finlytics está sendo construído em fases. Abaixo estão os próximos passos 
 
 ### Curto prazo
 
-- Melhorar a visualização do gráfico de categorias;
-- Implementar cache para categorias classificadas pela IA;
-- Adicionar novos exemplos de extrato CSV;
+- Implementar cache para categorias já classificadas pela IA (evitar chamadas repetidas);
+- Migrar da biblioteca `google-generativeai` para `google-genai` (a antiga foi descontinuada);
 - Criar validações para diferentes formatos de CSV;
 - Melhorar mensagens de erro para arquivos inválidos.
 
 ### Médio prazo
 
-- Suporte a PDF de extrato bancário;
+- Reclassificação automática ao editar a descrição na tabela;
+- Filtro por intervalo de datas personalizado;
 - Entrada manual de transações;
 - Persistência em SQLite para histórico multi-mês;
 - Chat em linguagem natural com os próprios dados.
@@ -222,8 +242,12 @@ Durante o desenvolvimento deste projeto, foram praticados conceitos como:
 - Manipulação de dados com pandas;
 - Criação de interface com Streamlit;
 - Uso de variáveis de ambiente com `.env`;
-- Integração com API de IA generativa;
-- Organização de um projeto Python;
+- Integração com API de IA generativa (Gemini);
+- Engenharia de prompt para classificação e extração de dados;
+- Uso de JSON para estruturar respostas da IA;
+- Conceito de `mime_type` para enviar PDF e imagem ao modelo;
+- Gemini multimodal (leitura de documentos);
+- Organização de um projeto Python em módulos;
 - Versionamento com Git e GitHub;
 - Construção de um MVP com foco em evolução incremental.
 
