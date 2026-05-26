@@ -25,6 +25,7 @@ categorias_map = {
     "NETFLIX": "Streaming",
     "SPOTIFY": "Streaming",
     "AMAZON PRIME": "Streaming",
+    "FARMÁCIA": "Saúde",
     "FARMACIA": "Saúde",
     "SALARIO": "Salário",
     "PIX RECEBIDA": "Entrada Diversa",
