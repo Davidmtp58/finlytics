@@ -1,5 +1,7 @@
 # Finlytics 💰
 
+🌐 **App no ar:** [finlytics2.streamlit.app](https://finlytics2.streamlit.app)
+
 O **Finlytics** é um assistente financeiro pessoal desenvolvido em Python para analisar extratos bancários, categorizar transações e apresentar um resumo financeiro simples e visual.
 
 O projeto aceita extratos em **CSV, PDF e imagem** e combina regras locais com IA generativa via Gemini para classificar transações bancárias brasileiras de forma mais inteligente.
@@ -38,6 +40,8 @@ Cada escolha técnica deste projeto foi feita com foco em três critérios: velo
 ---
 
 ## 3. Demonstração
+
+A aplicação está disponível online em: **[finlytics2.streamlit.app](https://finlytics2.streamlit.app)**
 
 O Finlytics possui uma interface visual construída com Streamlit.
 
