@@ -48,10 +48,9 @@ def descobrir_categoria(descricao):
     return "Outros"
 
 
-def carregar_extrato(fonte):
-    """Carrega o CSV e adiciona a coluna de categoria."""
+def carregar_extrato(fonte, usar_ia=True):
     df = pd.read_csv(fonte, parse_dates=["data"])
-    df["categoria"] = df["descricao"].apply(classificar_transacao)
+    df["categoria"] = df["descricao"].apply(lambda d: classificar_transacao(d, usar_ia))
     return df
 
 
@@ -113,14 +112,14 @@ Categoria:"""
         print(f"Erro ao chamar Gemini: {erro}")
         return "Outros"
     
-def classificar_transacao(descricao):
-    """Classifica a transação usando regras locais primeiro e Gemini como fallback."""
+def classificar_transacao(descricao, usar_ia=True):
     categoria_local = descobrir_categoria(descricao)
 
     if categoria_local != "Outros":
         return categoria_local
-
-    return classificar_com_gemini(descricao)
+    if usar_ia:
+        return classificar_com_gemini(descricao)
+    return "Outros"
 
 def extrair_transacoes_de_pdf(arquivo_pdf):
     """Usa o Gemini para extrair transações de um PDF de extrato bancário."""

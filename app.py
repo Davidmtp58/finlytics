@@ -32,14 +32,53 @@ st.set_page_config(
 st.title("💰 Finlytics")
 st.write("Assistente Financeiro Pessoal")
 
+# === LGPD: Termo de consentimento ===
+if not st.session_state.get("consentimento_dado", False):
+    st.warning("⚠️ Aviso de Privacidade — LGPD")
+    
+    st.markdown("""
+    Este aplicativo processa dados de extrato bancário e **envia arquivos PDF/imagem 
+    à API do Google Gemini** para extração e classificação de transações.
+    
+    **Antes de continuar, leia e confirme:**
+    """)
+    
+    ciente_processamento = st.checkbox(
+        "Estou ciente que meus dados serão processados pelo sistema e podem ser enviados ao Google Gemini."
+    )
+    dados_proprios = st.checkbox(
+        "Estou usando apenas dados próprios ou fictícios."
+    )
+    concordo = st.checkbox(
+        "Concordo com o uso conforme descrito acima."
+    )
+    
+    if st.button("Aceitar e continuar"):
+        if ciente_processamento and dados_proprios and concordo:
+            st.session_state["consentimento_dado"] = True
+            st.rerun()
+        else:
+            st.error("Você precisa marcar as três opções para continuar.")
+    
+    st.stop()
+
 arquivo = st.file_uploader("Envie seu extrato (CSV, PDF ou imagem)", type=["csv", "pdf", "png", "jpg", "jpeg"])
+
+modo_privacidade = st.toggle(
+    "🔒 Modo privacidade (não enviar dados para IA)",
+    help="Quando ativado, usa apenas o dicionário local. PDF/imagem não funcionam neste modo."
+)
 
 if arquivo is None:
     st.info("👆 Envie um arquivo (CSV, PDF ou imagem) para ver a análise")
 
 else:
+    if modo_privacidade and not arquivo.name.lower().endswith(".csv"):
+        st.error("⚠️ Modo privacidade ativado: apenas CSV é aceito (PDF e imagem dependem da IA).")
+        st.stop()
+    
     if arquivo.name.lower().endswith(".csv"):
-        df = carregar_extrato(arquivo)
+        df = carregar_extrato(arquivo, usar_ia=not modo_privacidade)
     else:
         df = extrair_transacoes_de_pdf(arquivo)
 
