@@ -7,11 +7,17 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+import streamlit as st
 import json
 
 # === setup, roda uma vez ===
-load_dotenv()                                              
-chave = os.getenv("GEMINI_API_KEY")                        
+load_dotenv()
+
+try:
+    chave = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    chave = os.getenv("GEMINI_API_KEY")
+                      
 genai.configure(api_key=chave)                             
 modelo_gemini = genai.GenerativeModel("gemini-2.5-flash")
 
