@@ -10,6 +10,8 @@ import google.generativeai as genai
 import streamlit as st
 import json
 
+from categorias import CATEGORIAS_VALIDAS, descobrir_categoria
+
 # === setup, roda uma vez ===
 load_dotenv()
 
@@ -17,35 +19,9 @@ try:
     chave = st.secrets["GEMINI_API_KEY"]
 except Exception:
     chave = os.getenv("GEMINI_API_KEY")
-                      
-genai.configure(api_key=chave)                             
+
+genai.configure(api_key=chave)
 modelo_gemini = genai.GenerativeModel("gemini-2.5-flash")
-
-# Mapa de palavras-chave para categorias
-categorias_map = {
-    "IFOOD": "Alimentação",
-    "SUPERMERCADO": "Alimentação",
-    "LANCHONETE": "Alimentação",
-    "UBER": "Transporte",
-    "POSTO COMBUSTIVEL": "Transporte",
-    "NETFLIX": "Streaming",
-    "SPOTIFY": "Streaming",
-    "AMAZON PRIME": "Streaming",
-    "FARMÁCIA": "Saúde",
-    "FARMACIA": "Saúde",
-    "SALARIO": "Salário",
-    "PIX RECEBIDA": "Entrada Diversa",
-    "PIX RECEBIDO": "Entrada Diversa",
-    "ACADEMIA": "Fitness",
-}
-
-
-def descobrir_categoria(descricao):
-    """Retorna a categoria de uma transação com base na descrição."""
-    for palavra_chave, categoria in categorias_map.items():
-        if palavra_chave in descricao:
-            return categoria
-    return "Outros"
 
 
 def carregar_extrato(fonte, usar_ia=True):
@@ -147,25 +123,38 @@ Regras:
     else:
         mime = "image/jpeg"
     
-    resposta = modelo_gemini.generate_content([
-        prompt,
-        {"mime_type": mime, "data": bytes_pdf}
-    ])
-    
+    try:
+        resposta = modelo_gemini.generate_content([
+            prompt,
+            {"mime_type": mime, "data": bytes_pdf}
+        ])
+    except Exception as erro:
+        raise RuntimeError(
+            "Não foi possível ler o arquivo com a IA. Verifique sua conexão "
+            "e a chave da API Gemini, ou tente novamente."
+        ) from erro
+
     # Limpa a resposta (remove marcações markdown que o Gemini adiciona)
     texto = resposta.text.strip()
     if texto.startswith("```json"):
-        texto = texto[7:]          
+        texto = texto[7:]
     elif texto.startswith("```"):
-        texto = texto[3:]          
+        texto = texto[3:]
     if texto.endswith("```"):
-        texto = texto[:-3]         
+        texto = texto[:-3]
     texto = texto.strip()
-    
+
     # Converte JSON em DataFrame
-    dados = json.loads(texto)
+    try:
+        dados = json.loads(texto)
+    except json.JSONDecodeError as erro:
+        raise RuntimeError(
+            "A IA não conseguiu extrair as transações desse arquivo. "
+            "Tente um extrato mais nítido ou em outro formato."
+        ) from erro
+
     df = pd.DataFrame(dados)
     df["data"] = pd.to_datetime(df["data"])
     df["categoria"] = df["descricao"].apply(classificar_transacao)
-    
+
     return df
