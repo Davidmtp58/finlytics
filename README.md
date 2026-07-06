@@ -92,6 +92,8 @@ PDF/imagem -> Gemini -> JSON -> DataFrame -> classificação
 
 Isso permite que o usuário envie o extrato no formato que o banco entrega, sem precisar montar um CSV manualmente.
 
+Se o Gemini falhar (sem internet, cota excedida) ou devolver um JSON inválido, a extração levanta um erro tratado e a interface exibe uma mensagem amigável, em vez de quebrar a aplicação.
+
 ---
 
 ## 5. Funcionalidades
@@ -185,6 +187,7 @@ finlytics/
 │
 ├── app.py
 ├── finlytics.py
+├── categorias.py
 ├── relatorio_financeiro.py
 ├── extrato_exemplo.csv
 ├── extrato_bancario_abril_2026.pdf
@@ -202,6 +205,7 @@ finlytics/
 |---|---|
 | `app.py` | Interface visual do projeto em Streamlit. |
 | `finlytics.py` | Contém a lógica principal de leitura, extração, categorização e cálculos. |
+| `categorias.py` | Mapa de categorias e classificação por regras locais, compartilhado entre `finlytics.py` e `relatorio_financeiro.py` para evitar duplicação. |
 | `relatorio_financeiro.py` | Executa uma análise simples pelo terminal. |
 | `extrato_exemplo.csv` | Arquivo CSV de exemplo para testar o projeto. |
 | `extrato_bancario_abril_2026.pdf` | Exemplo de extrato em PDF para testar a extração. |
