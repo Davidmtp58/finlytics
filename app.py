@@ -1,6 +1,7 @@
 import streamlit as st
-import plotly.graph_objects as go   
+import plotly.graph_objects as go
 from finlytics import carregar_extrato, calcular_resumo, top_categorias_gasto, extrair_transacoes_de_pdf
+from categorias import CATEGORIAS_VALIDAS
 
 def card_metrica(titulo, valor, cor_borda="#00D47E"):
     return f"""
@@ -80,7 +81,11 @@ else:
     if arquivo.name.lower().endswith(".csv"):
         df = carregar_extrato(arquivo, usar_ia=not modo_privacidade)
     else:
-        df = extrair_transacoes_de_pdf(arquivo)
+        try:
+            df = extrair_transacoes_de_pdf(arquivo)
+        except RuntimeError as erro:
+            st.error(f"⚠️ {erro}")
+            st.stop()
 
     meses_disponiveis = ["Todos"] + list(df["data"].dt.strftime("%Y-%m").unique())
     mes_escolhido = st.selectbox("Mês", meses_disponiveis)
@@ -103,6 +108,10 @@ else:
             "valor": st.column_config.NumberColumn(
                 "Valor",
                 format="R$ %.2f"
+            ),
+            "categoria": st.column_config.SelectboxColumn(
+                "Categoria",
+                options=CATEGORIAS_VALIDAS,
             ),
         },
     )
